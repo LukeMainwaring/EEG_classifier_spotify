@@ -1,0 +1,49 @@
+EEG Classifier
+	This program cleans the data from EEG recordings and creates a binary classifier based on two specified labels. My program uses a dataset I downloaded from Kaggle, but any dataset will work as long as it is in csv format, contains a subject id column, raw_input values column, and label column. EEG stands for Electroencephalography and is a method that records electrical activity in the brain. Many studies show that different mental activities produce unique EEG recordings. The two labels I focused on were EEG recordings from subjects performing two separate tasks: listening to music and meditating. Once my classifier is created I can use it to predict if a given song is predicted to be relaxing. If the classifier classifies the EEG recordings from listening to this song as relaxing it interacts with the Spotify web API to add it to a 'Relaxation' playlist. However, I provide the functionality for the user to choose whatever labels they want.
+
+Getting Started
+	In order to to run this program make sure you have the updated versions of the following modules:
+	pip3 install pandas
+	pip3 install numpy
+	pip3 install -U scikit-learn
+	pip3 install spotipy
+
+
+Clean Data
+	- clean_data.py contains a custom class that uses pandas to represent EEG data from a csv file. Ex: eeg_data = EEGData("eeg-data.csv") creates the pandas representation. 
+	- Two instances can be concatenated using the magic method __add__, eeg_data = eeg_data1 + eeg_data2. 
+	- The class contains a method to choose the labels you want to compare in your classifier. Ex: eeg_data.choose_labels("music", "relax"). 
+	- Then, the user must enter his/her subjectID (int), since the classifier is specific to each person. Ex: eeg_data.choose_id(1)
+	- At this point, we can create our X and y for the classification by calling the vectors method. Ex: X, y = eeg_data.vectors(). To see more detail about how feature vectors are created, see clean_data.py. 
+
+
+Classifier
+	- This classifier is dependent on preparing the data in the correct way using clean_data.py (see above). Once we have X and y, we can build our classifier using create_classifer. Ex: classifier = create_classifier(X, y)
+	- The classifier is only created if its accuracy is above 65% (chosen arbitrarily), which is calculated using sklearn's cross_val_score function. This is due to the fact that EEG recordings are not perfect predictors of what a person is exactly thinking, and there is a correlation between attention levels (given in original eeg_data csv file) and low classifier accuracies. 
+	- I also included two generators in classifier.py. true_score(n) generates the scores from subjects who we were able to build a classifier for from subject 1 to subject n. num_successes(n) generates the number of people who we were able to build a classifier for. For example, if we wanted to test our accuracy of the classifiers we produced, we could call: print(sum(true_score(30)) / sum(num_successes(30))).
+
+
+Incorporation into Spotify
+	- spotify.py is the main program in this project, since it includes functions from both clean_data.py and classifier.py, and uses them to classify input data and interact with the user's Spotify account.
+	- We run this program from the command line: 'python3 spotify.py playlist_id track_id'.
+	- playlist_id and track_id are unique id's that can be found by clicking on "copy Spotify URL" in the Spotify website and pasting to see the value. In this program, these ID's are provided as manual input.
+	- After running the previous command, the user is prompted for his/her subject id and Spotify username, which must be entered and valid.
+	- the main function already cleans the initial data and creates the classifier. 
+	- classify_song is the function that uses the classifier to predict the label of the song given input data. Since I am not able to create EEG recordings from specific songs I created an input that would be classified as relaxation and it is called from the main function as followed,
+	
+	test_data = X[:5]
+    if classify_song(clf, X, y, test_data):
+    	add_to_playlist()
+    else:
+    	print("Song was not considered relaxing and could not be added.") 
+    
+    - classify_song fits the classifier to the original data, and if the overall prediction of the new input data is considered relaxing we return true, else return false. 
+    - If true, add_to_playlist() is called which interacts with Spotify web API to add the track to the playlist (both ID's given from command line). This requires authorization, so I used my credentials to show how it works, but since they are my actual credentials please don't share this code publicly.
+    - Now, the user can see that the song has been successfully added to his/her relaxation playlist!
+
+
+Authors
+- Luke Mainwaring, UPenn '18
+
+Sources
+- https://www.kaggle.com/berkeley-biosense/synchronized-brainwave-dataset
